@@ -12,9 +12,9 @@ setup(
     author='Danislav Kirov',
     author_email='danislav.kirov@gmail.com',
     license='GNU GPL v2',
-    packages=['DPlayer'],
+    packages=['dplayer'],
     classifiers=[
-        'Development Status :: 1 - planning',
+        'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
         'Natural Language :: English',
