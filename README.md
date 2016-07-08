@@ -9,8 +9,9 @@ Functionalities:
   - Add song(s) / folder
   - Remove song(s)
   - Save / Load / Clear playlist
-  - Repeat song / playlist
+  - Remember last listened playlist
   - Shuflle
+  - Repeat song / playlist
   - Sort by id3 tags
   - Search for lyrics online
   - Search for artist and album info online
