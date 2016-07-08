@@ -6,12 +6,13 @@ Functionalities:
   - Play / Pause / Stop buttons
   - Next / Previous buttons
   - Volume / Time sliders
-  - Add song(s) / folder
+  - Add song(s) / folder(s)
   - Remove song(s)
-  - Save / Load / Clear playlist
-  - Remember last listened playlist
-  - Shuflle
-  - Repeat song / playlist
   - Sort by id3 tags
+  - Create / load playlist(s)
+  - Queue
+  - Repeat song
+  - Shuflle
+  - Search for song in playlist
   - Search for lyrics online
-  - Search for artist / album info online
+  - Search for picture and artist / album info
