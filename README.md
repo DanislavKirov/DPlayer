@@ -2,18 +2,16 @@
 'One player to rule them all.'
 
 The project represents a music player, or shall I say D(the)Player, written in Python3.5. 
-Intended functionalities:
+Functionalities:
   - Play / Pause / Stop buttons
   - Next / Previous buttons
   - Volume / Time sliders
-  - Add song(s) / folder(s)
+  - Add song(s) / folder
   - Remove song(s)
-  - Sort by id3 tags
-  - Create / load playlist(s)
-  - Queue
-  - Repeat song
+  - Save / Load / Clear playlist
+  - Remember last listened playlist
   - Shuflle
-  - Search for song in playlist
+  - Repeat song / playlist
+  - Sort by id3 tags
   - Search for lyrics online
-  - Search for picture and artist / album info
-  - Integration with last.fm
+  - Search for artist / album info online
