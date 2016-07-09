@@ -15,3 +15,4 @@ Functionalities:
   - Sort by id3 tags
   - Search for lyrics online
   - Search for artist and album info online
+  - Partitial integration with LastFM
