@@ -1,9 +1,10 @@
 import os
 from PyQt5.QtCore import Qt, QSize, QTime, QUrl
-from PyQt5.QtWidgets import (QPushButton, QWidget, QSlider,
+from PyQt5.QtWidgets import (QPushButton, QWidget, QSlider, QLineEdit,
                              QTableWidget, QGridLayout, QDesktopWidget,
                              QFileDialog, QTableWidgetItem, QAbstractItemView,
-                             QLabel, QShortcut, QVBoxLayout)
+                             QLabel, QShortcut, QVBoxLayout, QDialog,
+                             QDialogButtonBox)
 from PyQt5.QtMultimedia import QMediaPlayer
 from PyQt5.QtGui import QIcon, QKeySequence, QFont
 from core import DPlayerCore
@@ -75,9 +76,9 @@ class DPlayerUI(QWidget):
                             'addFiles', 'addFolder', 'shuffle',
                             'repeatPlaylist', 'repeatSong', 'Save playlist',
                             'Load playlist', 'Clear playlist', 'Find lyrics',
-                            'Find info']
+                            'Find info', 'Login', 'Logout', 'Love', 'Unlove']
         shortcuts = ['q', 'w', 'e', 'r', 't', 'a', 's', 'd', 'f', 'g', 'z',
-                     'x', 'c', 'v', 'b']
+                     'x', 'c', 'v', 'b', 'o', 'p', 'k', 'l']
 
         for name, cut in zip(self.buttonNames, shortcuts):
             button = QPushButton(self)
@@ -115,7 +116,7 @@ class DPlayerUI(QWidget):
             self.playerCore.repeatSong)
         self.buttons['repeatSong'].setCheckable(True)
 
-        for name, position in zip(self.buttonNames[10:], range(5)):
+        for name, position in zip(self.buttonNames[10:15], range(5)):
             self.buttons[name].setIcon(QIcon('icons/{}.png'.format(name)))
             self.buttons[name].setIconSize(QSize(120, 20))
             self.grid.addWidget(self.buttons[name], 4, position)
@@ -125,6 +126,24 @@ class DPlayerUI(QWidget):
         self.buttons['Clear playlist'].clicked.connect(self.clearPlaylist)
         self.buttons['Find lyrics'].clicked.connect(self.findLyrics)
         self.buttons['Find info'].clicked.connect(self.findInfo)
+
+        self.lastFMbuttons = QDialogButtonBox()
+        self.lastFMbuttons.setOrientation(Qt.Vertical)
+        for name, position in zip(self.buttonNames[15:], range(4)):
+            self.buttons[name].setIcon(QIcon('icons/{}.png'.format(name)))
+            self.buttons[name].setIconSize(QSize(120, 20))
+            self.lastFMbuttons.addButton(self.buttons[name],
+                                         QDialogButtonBox.ActionRole)
+        self.grid.addWidget(self.lastFMbuttons, 2, 4, Qt.AlignCenter)
+
+        # self.userLabel = QLabel('Username:\n')
+        # self.userLabel.setBuddy(self.buttons['Login'])
+        # self.grid.addWidget(
+        #     self.userLabel, 2, 4, Qt.AlignTop | Qt.AlignHCenter)
+        self.buttons['Login'].clicked.connect(self.login)
+        self.buttons['Logout'].clicked.connect(self.logout)
+        self.buttons['Love'].clicked.connect(self.love)
+        self.buttons['Unlove'].clicked.connect(self.unlove)
 
     def previousClicked(self):
         """Play previous song."""
@@ -192,7 +211,8 @@ class DPlayerUI(QWidget):
         fileNames = []
         for file in dirContent:
             path = '{}/{}'.format(directory, file)
-            if os.path.isfile(path) and path[len(path) - 4:] == '.mp3':
+            if os.path.isfile(path) and \
+                    path[len(path) - 4:] in ['.mp3', '.ogg', 'flac', '.wav']:
                 fileNames.append(path)
             elif os.path.isdir(path):
                 self.getFromDir(path)
@@ -397,7 +417,7 @@ class DPlayerUI(QWidget):
             names.append(self.playlist.media(index).canonicalUrl().path())
         self.addClicked(names)
 
-        self.grid.addWidget(self.playlistTable, 2, 0, 1, 5)
+        self.grid.addWidget(self.playlistTable, 2, 0, 1, 4)
         self.grid.setRowStretch(2, 1)
 
     def doubleClicked(self, item):
@@ -516,6 +536,47 @@ class DPlayerUI(QWidget):
             text = '\n'.join(info)
             self.windows.append(Window('Info', text))
 
+    def login(self):
+        """Opens window for user to log in lastFM."""
+        self.loginWindow = LoginDialog(self.playerCore)
+
+    def logout(self):
+        """Logs out current user"""
+        if self.playerCore.network is None:
+            return
+        self.logoutWindow = Window('Logout', 'GoodBye, {}!'.format(
+            self.playerCore.username))
+        self.playerCore.logout()
+
+    def love(self):
+        """Loves selected songs in lastFM."""
+        if self.playerCore.network is None:
+            self.errorWindow = Window('Error', 'You shoud login first.')
+            return
+        songs = self.playlistTable.selectedIndexes()[::4]
+        if not songs:
+            return
+        loved = []
+        for index in songs:
+            loved.append(self.playerCore.loveTrack(index.row()))
+        if all(loved):
+            self.successWindow = Window('Success', 'Songs loved!')
+        else:
+            self.errorWindow = Window(
+                'Error', 'Something went wrong! Try again later.')
+
+    def unlove(self):
+        """Unloves selected songs in lastFM."""
+        if self.playerCore.network is None:
+            self.errorWindow = Window('Error', 'You shoud login first.')
+            return
+        songs = self.playlistTable.selectedIndexes()[::4]
+        if not songs:
+            return
+
+        for index in songs:
+            self.playerCore.unloveTrack(index.row())
+
     def center(self):
         """Position player application at the center of the screen."""
         # rectangle specifying the geometry of the widget
@@ -527,3 +588,54 @@ class DPlayerUI(QWidget):
         # move the top-left point of the application window to the top-left
         # point of the rectangle
         self.move(rectangle.topLeft())
+
+
+class LoginDialog(QDialog):
+    def __init__(self, playerCore):
+        super().__init__()
+        self.player = playerCore
+        self.ui()
+
+    def ui(self):
+        self.formGridLayout = QGridLayout()
+        self.usernameEdit = QLineEdit()
+        self.passwordEdit = QLineEdit()
+        self.passwordEdit.setEchoMode(QLineEdit.Password)
+
+        self.labelUsername = QLabel("Username")
+        self.labelPassword = QLabel("Password")
+        self.labelUsername.setBuddy(self.usernameEdit)
+        self.labelPassword.setBuddy(self.passwordEdit)
+
+        self.buttons = QDialogButtonBox()
+        self.buttons.addButton(QDialogButtonBox.Ok)
+        self.buttons.addButton(QDialogButtonBox.Cancel)
+        self.buttons.button(QDialogButtonBox.Ok).setText("Login")
+        self.buttons.button(QDialogButtonBox.Cancel).setText("Abort")
+
+        self.buttons.button(
+            QDialogButtonBox.Cancel).clicked.connect(self.close)
+        self.buttons.button(
+            QDialogButtonBox.Ok).clicked.connect(self.slotAcceptLogin)
+
+        self.formGridLayout.addWidget(self.labelUsername, 0, 0)
+        self.formGridLayout.addWidget(self.usernameEdit, 0, 1)
+        self.formGridLayout.addWidget(self.labelPassword, 1, 0)
+        self.formGridLayout.addWidget(self.passwordEdit, 1, 1)
+        self.formGridLayout.addWidget(self.buttons, 2, 0, 1, 2)
+
+        self.setLayout(self.formGridLayout)
+        self.setWindowTitle('Login')
+        self.show()
+
+    def slotAcceptLogin(self):
+        username = self.usernameEdit.text()
+        password = self.passwordEdit.text()
+        self.close()
+        logged = self.player.login(username, password)
+        if not logged:
+            self.errorWindow = Window(
+                'Error', 'Login failed! Try again later.')
+        else:
+            self.successful = Window(
+                'Success', 'Welcome, {}!'.format(username))
