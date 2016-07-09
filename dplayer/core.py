@@ -7,6 +7,7 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaPlaylist, QMediaContent
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from pydub.utils import mediainfo
+import pylast
 
 
 class DPlayerCore(QWidget):
@@ -30,6 +31,10 @@ class DPlayerCore(QWidget):
         self.lyricsApiKey = '4b364f0652e471aa50813a22cdf830ea'
         self.lastFMapi = 'http://ws.audioscrobbler.com/2.0/'
         self.lastFMapikey = '052c43a00a4fc294bb3c9e0c38bdf710'
+        self.lastFMsecret = '14c66392fa9c6c142a41ccc2b0674e19'
+        self.username = None
+        self.password = None
+        self.network = None
         self.error = 'Something went wrong! Try again later.'
 
     def play(self):
@@ -71,7 +76,7 @@ class DPlayerCore(QWidget):
             self.playlist.addMedia(QMediaContent(url))
             self.musicOrder.append([name])
 
-        self.added(self.playlist.mediaCount() - len(fileNames))
+        self.added(len(fileNames))
 
     def added(self, added):
         """Saves music info in musicOrder."""
@@ -171,7 +176,7 @@ class DPlayerCore(QWidget):
     def findLyrics(self, index):
         """Returns lyrics for song at index."""
         if self.musicOrder[index][2] == 'Unknown':
-            return 'Unknown song!'
+            return 'Unknown song.'
 
         searchSong = '{}track.search?q_track={}'.format(
             self.lyricsApi, self.musicOrder[index][2].replace(' ', '%20'))
@@ -283,6 +288,54 @@ class DPlayerCore(QWidget):
                 info.append('Musical style: {}'.format(wiki['Musical style']))
 
         return info
+
+    def login(self, username, password):
+        """Creates lastFM network."""
+        self.username = username
+        self.password = pylast.md5(password)
+        try:
+            self.network = pylast.LastFMNetwork(api_key=self.lastFMapikey,
+                                                api_secret=self.lastFMsecret,
+                                                username=self.username,
+                                                password_hash=self.password)
+        except Exception:
+            self.username = None
+            self.password = None
+            self.network = None
+            return False
+        return True
+
+    def logout(self):
+        """Destoys lastFM network and current user info."""
+        self.username = None
+        self.password = None
+        self.network = None
+
+    def loveTrack(self, index):
+        """Love track at index in lastFM."""
+        if self.network is None:
+            return False
+
+        track = self.network.get_track(self.musicOrder[index][1],
+                                       self.musicOrder[index][2])
+        try:
+            track.love()
+        except Exception:
+            return False
+        return True
+
+    def unloveTrack(self, index):
+        """Unlove track at index in lastFM."""
+        if self.network is None:
+            return False
+
+        track = self.network.get_track(self.musicOrder[index][1],
+                                       self.musicOrder[index][2])
+        try:
+            track.unlove()
+        except Exception:
+            return False
+        return True
 
     def isMuted(self):
         """Returns True if player is muted."""
